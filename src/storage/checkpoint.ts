@@ -1,39 +1,59 @@
 // src/storage/checkpoint.ts
-import * as fs from 'fs/promises';
+import * as fs from 'fs';
 import * as path from 'path';
-import * as archiver from 'archiver'; // npm install archiver
+import * as os from 'os';
+import { createWriteStream } from 'fs';
+import archiver from 'archiver';
 import { uploadCheckpoint } from './0g-client';
 
-// Define the path to OpenClaw's memory and workspace
-// ${os.homedir()}/.openclaw/
-const MEMORY_FILE = path.join(process.env.HOME, '.openclaw', 'MEMORY.md');
-const LCM_DB = path.join(process.env.HOME, '.openclaw', 'lcm.db');
-const WORKSPACE_DIR = path.join(process.env.HOME, '.openclaw', 'workspace');
+const MEMORY_FILE = path.join(os.homedir(), '.openclaw', 'MEMORY.md');
+const LCM_DB = path.join(os.homedir(), '.openclaw', 'lcm.db');
+const WORKSPACE_DIR = path.join(os.homedir(), '.openclaw', 'workspace');
 
 export async function createAndUploadCheckpoint(sessionId: string): Promise<string> {
   const timestamp = Date.now();
-  const checkpointDir = path.join('/tmp', `checkpoint_${sessionId}_${timestamp}`);
-  const zipPath = `${checkpointDir}.zip`;
+  const tempDir = path.join('/tmp', `checkpoint_${sessionId}_${timestamp}`);
+  const zipPath = `${tempDir}.zip`;
 
-  // 1. Create a temporary directory and copy files
-  await fs.mkdir(checkpointDir, { recursive: true });
-  await fs.copyFile(MEMORY_FILE, path.join(checkpointDir, 'MEMORY.md'));
-  await fs.copyFile(LCM_DB, path.join(checkpointDir, 'lcm.db'));
-  await fs.cp(WORKSPACE_DIR, path.join(checkpointDir, 'workspace'), { recursive: true });
+  try {
+    // 1. Create temporary directory
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
 
-  // 2. Zip the directory
-  const output = await fs.createWriteStream(zipPath);
-  const archive = archiver('zip', { zlib: { level: 9 } });
-  archive.pipe(output);
-  archive.directory(checkpointDir, false);
-  await archive.finalize();
+    // 2. Copy files if they exist
+    if (fs.existsSync(MEMORY_FILE)) {
+      fs.copyFileSync(MEMORY_FILE, path.join(tempDir, 'MEMORY.md'));
+    }
+    if (fs.existsSync(LCM_DB)) {
+      fs.copyFileSync(LCM_DB, path.join(tempDir, 'lcm.db'));
+    }
+    if (fs.existsSync(WORKSPACE_DIR)) {
+      fs.cpSync(WORKSPACE_DIR, path.join(tempDir, 'workspace'), { recursive: true });
+    }
 
-  // 3. Upload to 0G Storage
-  const rootHash = await uploadCheckpoint(zipPath);
+    // 3. Create zip file
+    const output = createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
 
-  // 4. Clean up temp files
-  await fs.rm(checkpointDir, { recursive: true, force: true });
-  await fs.unlink(zipPath);
+    await new Promise<void>((resolve, reject) => {
+      output.on('close', resolve);
+      archive.on('error', reject);
+      archive.pipe(output);
+      archive.directory(tempDir, false);
+      archive.finalize();
+    });
 
-  return rootHash;
+    // 4. Upload to 0G Storage
+    const rootHash = await uploadCheckpoint(zipPath);
+
+    // 5. Clean up
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    fs.unlinkSync(zipPath);
+
+    return rootHash;
+  } catch (error) {
+    console.error('Checkpoint creation failed:', error);
+    throw error;
+  }
 }
