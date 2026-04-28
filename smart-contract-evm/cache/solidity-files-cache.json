@@ -1,0 +1,45 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/augustineonuora/Dapps-Empty/2026/May2026/0g-memory-hooks/smart-contract-evm/contracts/CheckpointRegistry.sol": {
+      "lastModificationDate": 1777410282141,
+      "contentHash": "e0bb7ce9811d02aa5a179fe62c1de823",
+      "sourceName": "contracts/CheckpointRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.30",
+        "settings": {
+          "evmVersion": "cancun",
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "metadata": {
+            "bytecodeHash": "none"
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.30"
+      ],
+      "artifacts": [
+        "CheckpointRegistry"
+      ]
+    }
+  }
+}

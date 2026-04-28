@@ -1,0 +1,9 @@
+{
+  "contract": "CheckpointRegistry",
+  "network": "0g-galileo-testnet",
+  "chainId": 16602,
+  "address": "0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780",
+  "deployer": "0x2c3b2B2325610a6814f2f822D0bF4DAB8CF16e16",
+  "timestamp": "2026-04-28T21:23:40.049Z",
+  "transactionHash": "0xc13908f22ad27b8d3701aade203ede07641b1bb964a0ddf1536386c453d736db"
+}

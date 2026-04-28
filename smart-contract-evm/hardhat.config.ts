@@ -1,6 +1,5 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "@nomicfoundation/hardhat-verify";
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -17,7 +16,7 @@ if (!PRIVATE_KEY) {
 
 const config: HardhatUserConfig = {
   solidity: {
-    version: "0.8.19",
+    version: "0.8.30",
     settings: {
       evmVersion: "cancun",
       optimizer: {
