@@ -1,17 +1,12 @@
-//import { HardhatUserConfig } from "hardhat/config";
-//import "@nomicfoundation/hardhat-toolbox";
-//const config: HardhatUserConfig = {
-//  solidity: "0.8.28",
-//};
-//export default config;
-
-// hardhat.config.ts
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomicfoundation/hardhat-verify";
 import * as dotenv from "dotenv";
+import * as path from "path";
 
-dotenv.config();
+// Load .env from parent directory (or local)
+dotenv.config({ path: path.join(__dirname, "..", ".env") });
+dotenv.config(); // Fallback to local .env
 
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const RPC_URL = process.env.EVMRPC_URL || "https://evmrpc-testnet.0g.ai";
@@ -24,7 +19,7 @@ const config: HardhatUserConfig = {
   solidity: {
     version: "0.8.19",
     settings: {
-      evmVersion: "cancun", // REQUIRED for 0G Chain
+      evmVersion: "cancun",
       optimizer: {
         enabled: true,
         runs: 200,
@@ -58,6 +53,12 @@ const config: HardhatUserConfig = {
         },
       },
     ],
+  },
+  paths: {
+    sources: "./contracts",
+    tests: "./test",
+    cache: "./cache",
+    artifacts: "./artifacts",
   },
 };
 

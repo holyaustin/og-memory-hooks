@@ -1,22 +1,14 @@
 {
-  "name": "0g-memory-hooks",
+  "name": "0g-memory-hooks-contracts",
   "version": "0.1.0",
-  "description": "OpenClaw plugin for persistent agent memory on 0G Storage",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "keywords": [],
-  "author": "holyaustin",
-  "license": "ISC",
-  "type": "commonjs",
+  "description": "Smart contracts for 0G-Memory-Hooks",
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "dev": "ts-node src/index.ts",
-    "test": "echo \"No tests yet\"",
-    "deploy:contract": "npx hardhat run scripts/deploy.ts --network 0g-galileo-testnet",
-    "verify:contract": "npx hardhat run scripts/verify.ts --network 0g-galileo-testnet",
-    "check:balance": "npx hardhat run scripts/check-balance.ts --network 0g-galileo-testnet",
-    "interact": "npx hardhat run scripts/interact.ts --network 0g-galileo-testnet"
+    "deploy": "npx hardhat run dist/scripts/deploy.js --network 0g-galileo-testnet",
+    "verify": "npx hardhat run dist/scripts/verify.js --network 0g-galileo-testnet",
+    "balance": "npx hardhat run dist/scripts/check-balance.js --network 0g-galileo-testnet",
+    "interact": "npx hardhat run dist/scripts/interact.js --network 0g-galileo-testnet"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.1.2",
