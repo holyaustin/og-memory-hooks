@@ -6,17 +6,19 @@ dist/
 build/
 .env
 
-# Hardhat files
-/cache
-/artifacts
+# Hardhat 
+smartcontract/.env
+smartcontract/node_modules/
+smartcontract/cache
+smartcontract/artifacts
 
 # TypeChain files
-/typechain
-/typechain-types
+smartcontract/typechain
+smartcontract/typechain-types
 
 # solidity-coverage files
-/coverage
-/coverage.json
+smartcontract/coverage
+smartcontract/coverage.json
 
 # Hardhat Ignition default folder for deployments against a local node
-ignition/deployments/chain-31337
+smartcontract/ignition/deployments/chain-31337
