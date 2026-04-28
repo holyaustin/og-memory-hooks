@@ -1,4 +1,4 @@
-// src/storage/checkpoint.ts
+// src/storage/checkpoint.ts - Partially updated
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -16,12 +16,12 @@ export async function createAndUploadCheckpoint(sessionId: string): Promise<stri
   const zipPath = `${tempDir}.zip`;
 
   try {
-    // 1. Create temporary directory
+    // Create temporary directory
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir, { recursive: true });
     }
 
-    // 2. Copy files if they exist
+    // Copy files if they exist
     if (fs.existsSync(MEMORY_FILE)) {
       fs.copyFileSync(MEMORY_FILE, path.join(tempDir, 'MEMORY.md'));
     }
@@ -32,10 +32,10 @@ export async function createAndUploadCheckpoint(sessionId: string): Promise<stri
       fs.cpSync(WORKSPACE_DIR, path.join(tempDir, 'workspace'), { recursive: true });
     }
 
-    // 3. Create zip file
+    // Create zip file
     const output = createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
-
+    
     await new Promise<void>((resolve, reject) => {
       output.on('close', resolve);
       archive.on('error', reject);
@@ -44,10 +44,10 @@ export async function createAndUploadCheckpoint(sessionId: string): Promise<stri
       archive.finalize();
     });
 
-    // 4. Upload to 0G Storage
+    // Upload to 0G Storage
     const rootHash = await uploadCheckpoint(zipPath);
 
-    // 5. Clean up
+    // Clean up
     fs.rmSync(tempDir, { recursive: true, force: true });
     fs.unlinkSync(zipPath);
 

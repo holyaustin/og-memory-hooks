@@ -1,5 +1,5 @@
-// src/hooks/heartbeat.ts
-export async function heartbeatHandler(event: any) {
-  console.log('💓 heartbeat triggered - periodic checkpoint');
+// src/hooks/after_restart.ts
+export function afterRestartHandler(event: any) {
+  console.log('✅ after_restart hook triggered', event);
   return { proceed: true };
 }
