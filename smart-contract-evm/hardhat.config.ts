@@ -37,6 +37,11 @@ const config: HardhatUserConfig = {
       gas: "auto",
       gasPrice: "auto",
     },
+      "mainnet": {
+    url: "https://evmrpc.0g.ai",
+    chainId: 16661,
+    accounts: PRIVATE_KEY ? [PRIVATE_KEY.startsWith('0x') ? PRIVATE_KEY : `0x${PRIVATE_KEY}`] : [],
+  }
   },
   etherscan: {
     apiKey: {

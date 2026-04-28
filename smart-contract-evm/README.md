@@ -19,3 +19,6 @@ npx hardhat ignition deploy ./ignition/modules/Lock.ts
 💾 Deployment info saved to smartContract/deployment.json
 
 🎉 Deployment complete! Contract address: 0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780
+
+Successfully verified contract CheckpointRegistry on the block explorer.
+https://chainscan-galileo.0g.ai/address/0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780#code
