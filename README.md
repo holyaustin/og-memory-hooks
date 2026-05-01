@@ -99,13 +99,3 @@ Recording pointers on 0G Chain for discovery
 
 Broadcasting via Gensyn AXL for cross-device sync
 
-
-sudo mkdir -p /etc/openclaw
-sudo tee /etc/openclaw/env << 'EOF'
-DEEPSEEK_API_KEY=
-PRIVATE_KEY=
-EVMRPC_URL=https://evmrpc-testnet.0g.ai
-INDEXER_RPC=https://indexer-storage-testnet-turbo.0g.ai
-REGISTRY_ADDRESS=0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780
-EOF
-sudo chmod 600 /etc/openclaw/env
