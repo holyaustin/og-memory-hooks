@@ -1,12 +1,31 @@
-
 {
-  "name": "0g-memory-hooks",
+  "id": "0g-memory-hooks",
+  "name": "0G Memory Hooks",
   "version": "0.1.0",
   "description": "Auto-persist agent memory to 0G Storage before compaction.",
   "main": "dist/index.js",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "activation": {
+    "onStartup": true
+  },
   "hooks": [
-    { "event": "before_compact", "handler": "beforeCompactHandler", "priority": 90 },
-    { "event": "after_restart", "handler": "afterRestartHandler", "priority": 10 },
-    { "event": "heartbeat", "handler": "heartbeatHandler", "interval": 300 }
+    {
+      "event": "before_compact",
+      "handler": "./dist/hooks/before_compact.js",
+      "priority": 90
+    },
+    {
+      "event": "after_restart",
+      "handler": "./dist/hooks/after_restart.js",
+      "priority": 10
+    },
+    {
+      "event": "heartbeat",
+      "handler": "./dist/hooks/heartbeat.js"
+    }
   ]
 }

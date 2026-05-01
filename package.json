@@ -1,31 +1,24 @@
 {
   "name": "0g-memory-hooks",
   "version": "0.1.0",
-  "description": "OpenClaw plugin for persistent agent memory on 0G Storage",
+  "description": "Persistent agent memory on 0G Storage for OpenClaw",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "keywords": [],
-  "author": "holyaustin",
-  "license": "ISC",
-  "type": "commonjs",
+  "openclaw": {
+    "extensions": ["./dist/index.js"]
+  },
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
     "dev": "ts-node src/index.ts",
-    "test": "echo \"No tests yet\"",
-    "deploy:contract": "npx hardhat run scripts/deploy.ts --network 0g-galileo-testnet",
-    "verify:contract": "npx hardhat run scripts/verify.ts --network 0g-galileo-testnet",
-    "check:balance": "npx hardhat run scripts/check-balance.ts --network 0g-galileo-testnet",
-    "interact": "npx hardhat run scripts/interact.ts --network 0g-galileo-testnet"
+    "test": "echo \"No tests yet\""
   },
   "devDependencies": {
     "@types/archiver": "^7.0.0",
     "@types/extract-zip": "^2.0.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.6.0",
-    "chai": "^4.5.0",
     "ts-node": "^10.9.2",
-    "typechain": "^8.3.2",
     "typescript": "^6.0.3"
   },
   "dependencies": {
