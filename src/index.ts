@@ -5,6 +5,8 @@ import { afterRestartHandler } from './hooks/after_restart.js';
 import { heartbeatHandler } from './hooks/heartbeat.js';
 import { uploadTo0G, downloadFrom0G, getCheckpointStatus } from './tools/memory_tools.js';
 
+
+
 export default {
   id: '0g-memory-hooks',
   name: '0G Memory Hooks',
