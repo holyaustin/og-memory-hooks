@@ -5,6 +5,7 @@ node_modules/
 dist/
 build/
 .env
+0g-memory-hooks-0.1.0.tgz
 
 # Hardhat 
 smartcontract/.env
