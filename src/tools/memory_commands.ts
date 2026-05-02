@@ -1,4 +1,4 @@
-// src/tools/memory_tools.ts
+// src/tools/memory_commands.ts
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -9,7 +9,7 @@ import { ethers } from 'ethers';
 
 const MEMORY_PATH = path.join(os.homedir(), '.openclaw', 'workspace', 'MEMORY.md');
 
-export async function uploadTo0G(agentId: string): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function uploadTo0G(api: any, agentId: string): Promise<any> {
   try {
     // Check if memory file exists
     if (!fs.existsSync(MEMORY_PATH)) {
@@ -24,6 +24,8 @@ export async function uploadTo0G(agentId: string): Promise<{ content: Array<{ ty
     // Read current memory
     const memoryContent = fs.readFileSync(MEMORY_PATH, 'utf-8');
     const memorySize = memoryContent.length;
+    
+    await api.sendProgress?.(`📤 Uploading ${memorySize} bytes of memory to 0G...`);
     
     // Create checkpoint file
     const checkpointPath = `/tmp/0g-checkpoint-${Date.now()}.json`;
@@ -76,8 +78,10 @@ export async function uploadTo0G(agentId: string): Promise<{ content: Array<{ ty
   }
 }
 
-export async function downloadFrom0G(agentId: string): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function downloadFrom0G(api: any, agentId: string): Promise<any> {
   try {
+    await api.sendProgress?.(`🔍 Looking for latest checkpoint for agent "${agentId}"...`);
+    
     // Get latest checkpoint from chain
     const rootHash = await getLatestCheckpoint(agentId);
     
@@ -85,15 +89,18 @@ export async function downloadFrom0G(agentId: string): Promise<{ content: Array<
       return {
         content: [{
           type: 'text',
-          text: `❌ **No Checkpoint Found**\n\nAgent "${agentId}" has no saved checkpoint on 0G.\n\nUse the \`upload_memory_to_0g\` tool to save your current memory first.`
+          text: `❌ **No Checkpoint Found**\n\nAgent "${agentId}" has no saved checkpoint on 0G.\n\nUse \`/0g:upload\` to save your current memory first.`
         }]
       };
     }
+    
+    await api.sendProgress?.(`📥 Downloading checkpoint ${rootHash.substring(0, 20)}... from 0G Storage`);
     
     // Backup current memory
     if (fs.existsSync(MEMORY_PATH)) {
       const backupPath = `${MEMORY_PATH}.backup-${Date.now()}`;
       fs.copyFileSync(MEMORY_PATH, backupPath);
+      await api.sendProgress?.(`💾 Backed up current memory to: ${path.basename(backupPath)}`);
     }
     
     // Download checkpoint
@@ -143,7 +150,7 @@ export async function downloadFrom0G(agentId: string): Promise<{ content: Array<
   }
 }
 
-export async function getCheckpointStatus(agentId: string): Promise<{ content: Array<{ type: string; text: string }> }> {
+export async function getCheckpointStatus(api: any, agentId: string): Promise<any> {
   try {
     const rootHash = await getLatestCheckpoint(agentId);
     
@@ -157,7 +164,7 @@ export async function getCheckpointStatus(agentId: string): Promise<{ content: A
 ❌ No checkpoint found on-chain.
 
 💡 **Actions:**
-   • Save current memory: Ask the agent to "upload memory to 0G"
+   • Save current memory: \`/0g:upload ${agentId}\`
    • The agent will auto-save before context compaction
         `
         }]
@@ -187,9 +194,9 @@ export async function getCheckpointStatus(agentId: string): Promise<{ content: A
    • Latest Block: ${latestBlock}
    • Your data is decentralized and permanent!
 
-💡 **Commands to try:**
-   • "Please restore my memory from 0G"
-   • "Upload my current memory to 0G storage"
+💡 **Commands:**
+   • Download: \`/0g:download ${agentId}\`
+   • Upload new: \`/0g:upload ${agentId}\`
         `
       }]
     };
@@ -201,4 +208,24 @@ export async function getCheckpointStatus(agentId: string): Promise<{ content: A
       }]
     };
   }
+}
+
+export async function getCheckpointHistory(api: any, agentId: string): Promise<any> {
+  // This would require querying historical events from the contract
+  // For now, provide a simplified version
+  return {
+    content: [{
+      type: 'text',
+      text: `
+📜 **Checkpoint History for Agent "${agentId}"**
+
+ℹ️ To view full history, visit:
+   https://chainscan-galileo.0g.ai/address/0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780?tab=events
+
+Filter by agentId: "${agentId}"
+
+💡 **Pro Tip:** Every time you upload or auto-save, a new event is created on-chain!
+      `
+    }]
+  };
 }

@@ -2,7 +2,7 @@
   "id": "0g-memory-hooks",
   "name": "0G Memory Hooks",
   "version": "0.1.0",
-  "description": "Auto-persist agent memory to 0G Storage before compaction.",
+  "description": "Persistent agent memory on 0G Storage with TUI commands",
   "main": "dist/index.js",
   "configSchema": {
     "type": "object",
@@ -12,6 +12,28 @@
   "activation": {
     "onStartup": true
   },
+  "commands": [
+    {
+      "name": "0g:upload",
+      "description": "Upload current memory to 0G Storage",
+      "category": "0G Memory"
+    },
+    {
+      "name": "0g:download",
+      "description": "Restore memory from latest 0G checkpoint",
+      "category": "0G Memory"
+    },
+    {
+      "name": "0g:status",
+      "description": "Check on-chain checkpoint status",
+      "category": "0G Memory"
+    },
+    {
+      "name": "0g:help",
+      "description": "Show all 0G Memory commands",
+      "category": "0G Memory"
+    }
+  ],
   "hooks": [
     {
       "event": "before_compact",
