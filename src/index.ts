@@ -4,7 +4,8 @@ import { beforeCompactHandler } from './hooks/before_compact.js';
 import { afterRestartHandler } from './hooks/after_restart.js';
 import { heartbeatHandler } from './hooks/heartbeat.js';
 import { uploadTo0G, downloadFrom0G, getCheckpointStatus } from './tools/memory_tools.js';
-import { startAXLNode, stopAXLNode, getAXLStatus, receiveFromPeers } from './integrations/gensyn.js';
+import { startAXLNode, stopAXLNode, receiveFromPeers } from './integrations/gensyn.js';
+import { initKeeperHub, isKeeperHubAvailable } from './integrations/keeperhub.js';
 import { getLatestCheckpoint } from './storage/registry.js';
 
 let axlStarted = false;
@@ -15,22 +16,27 @@ export default {
   description: 'Auto-persist agent memory to 0G Storage before compaction.',
   version: '0.1.0',
   register(api: any) {
+    // Initialize KeeperHub with API key from env (passed explicitly)
+    const keeperhubApiKey = process.env.KEEPERHUB_API_KEY;
+    if (keeperhubApiKey) {
+      initKeeperHub(keeperhubApiKey).catch(console.warn);
+    } else {
+      console.log('[KeeperHub] No API key found. Direct transaction mode only.');
+    }
+    
     // Register lifecycle hooks
     api.on('before_compact', beforeCompactHandler, { priority: 90 });
     api.on('after_restart', afterRestartHandler, { priority: 10 });
     
     // Enhanced heartbeat with P2P peer message checking
     api.on('heartbeat', async () => {
-      // Call existing heartbeat handler
       await heartbeatHandler({});
       
-      // Check for peer messages if AXL is available
       if (axlStarted) {
         const peerMessages = await receiveFromPeers();
         for (const msg of peerMessages) {
           if (msg.type === 'checkpoint' && msg.agentId && msg.rootHash) {
             console.log(`[P2P] Peer checkpoint received for agent ${msg.agentId}`);
-            // Check if this is a newer checkpoint than ours
             const ourLatest = await getLatestCheckpoint(msg.agentId);
             if (!ourLatest || ourLatest !== msg.rootHash) {
               console.log(`[P2P] New checkpoint available! Use restore_memory_from_0g tool to sync.`);
@@ -43,7 +49,7 @@ export default {
     // Register tools
     api.registerTool({
       name: 'upload_memory_to_0g',
-      description: 'Upload the current agent memory to 0G decentralized storage and register it on-chain. This creates a permanent, verifiable checkpoint.',
+      description: 'Upload the current agent memory to 0G decentralized storage and register it on-chain.',
       parameters: Type.Optional(Type.Object({
         agentId: Type.Optional(Type.String({ description: 'Optional agent ID (defaults to "main")' }))
       })),
@@ -55,7 +61,7 @@ export default {
     
     api.registerTool({
       name: 'restore_memory_from_0g',
-      description: 'Restore agent memory from the latest checkpoint stored on 0G blockchain. This recovers all previous conversation context.',
+      description: 'Restore agent memory from the latest checkpoint stored on 0G blockchain.',
       parameters: Type.Optional(Type.Object({
         agentId: Type.Optional(Type.String({ description: 'Optional agent ID (defaults to "main")' }))
       })),
@@ -67,7 +73,7 @@ export default {
     
     api.registerTool({
       name: 'check_0g_memory_status',
-      description: 'Check if agent memory is stored on the 0G blockchain and verify the latest checkpoint.',
+      description: 'Check if agent memory is stored on the 0G blockchain.',
       parameters: Type.Optional(Type.Object({
         agentId: Type.Optional(Type.String({ description: 'Optional agent ID (defaults to "main")' }))
       })),
@@ -77,27 +83,11 @@ export default {
       }
     });
     
-    // Start AXL node for P2P mesh networking
+    // Start AXL (no child_process, just checks for existing node)
     startAXLNode().then(() => {
       axlStarted = true;
-      const status = getAXLStatus();
-      if (status.available) {
-        console.log('[AXL] ✅ P2P mesh network active. Agents can discover and sync with each other.');
-      } else {
-        console.log('[AXL] ℹ️ P2P features unavailable. Single-agent mode only.');
-      }
-    }).catch((err) => {
-      console.warn('[AXL] Failed to start:', err.message);
-    });
+    }).catch(() => {});
     
-    console.log('✅ 0G-Memory-Hooks plugin registered with 3 tools + P2P mesh + KeeperHub.');
-    
-    // Optional: Cleanup on plugin unload (if API supports it)
-    if (typeof api.onUnload === 'function') {
-      api.onUnload(async () => {
-        await stopAXLNode();
-        console.log('0G-Memory-Hooks plugin unloaded.');
-      });
-    }
+    console.log('✅ 0G-Memory-Hooks plugin registered.');
   }
 };

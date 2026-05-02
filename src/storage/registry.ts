@@ -1,7 +1,7 @@
 // src/storage/registry.ts
 import { ethers } from 'ethers';
 import * as dotenv from 'dotenv';
-import { relayViaKeeperHub, isKeeperHubAvailable, initKeeperHub } from '../integrations/keeperhub.js';
+import { relayViaKeeperHub, isKeeperHubAvailable } from '../integrations/keeperhub.js';
 import { broadcastToPeers } from '../integrations/gensyn.js';
 
 dotenv.config();
@@ -26,8 +26,8 @@ const provider = new ethers.JsonRpcProvider(EVMRPC_URL);
 const signer = new ethers.Wallet(PRIVATE_KEY, provider);
 const contract = new ethers.Contract(REGISTRY_ADDRESS, REGISTRY_ABI, signer);
 
-// Initialize KeeperHub on module load
-initKeeperHub().catch(console.warn);
+// NOTE: KeeperHub is initialized from index.ts, not here
+// This avoids the missing apiKey error
 
 /**
  * Registers a checkpoint on-chain.

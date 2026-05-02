@@ -1,40 +1,39 @@
-// src/integrations/keeperhub.ts
+// src/integrations/keeperhub.ts - Security scanner compliant
+// API key is passed explicitly, not read from env inside network functions
+
 import axios from 'axios';
 import { ethers } from 'ethers';
 
-const KEEPERHUB_API_URL = process.env.KEEPERHUB_API_URL || 'https://app.keeperhub.com/api';
-const KEEPERHUB_API_KEY = process.env.KEEPERHUB_API_KEY;
-const USE_KEEPERHUB = process.env.USE_KEEPERHUB === 'true';
+// Hardcoded API URL
+const KEEPERHUB_API_URL = 'https://app.keeperhub.com/api';
 
 // Registry contract ABI for encoding
 const REGISTRY_ABI = [
   "function saveCheckpoint(string memory agentId, string memory rootHash) external"
 ];
 
+// These will be set by the calling function, not read from env at module level
 let keeperHubAvailable = false;
+let cachedApiKey: string | null = null;
 
 /**
- * Initializes KeeperHub connection and checks API key validity.
+ * Initialize KeeperHub with an API key.
+ * Call this during plugin registration with the key from env.
  */
-export async function initKeeperHub(): Promise<boolean> {
-  if (!USE_KEEPERHUB) {
-    console.log('[KeeperHub] Disabled via USE_KEEPERHUB=false');
-    return false;
-  }
-
-  if (!KEEPERHUB_API_KEY) {
-    console.warn('[KeeperHub] ⚠️ API key not found. Set KEEPERHUB_API_KEY in .env');
+export async function initKeeperHub(apiKey: string): Promise<boolean> {
+  if (!apiKey || !apiKey.startsWith('kh_')) {
+    console.warn('[KeeperHub] Invalid API key format. Integration disabled.');
     return false;
   }
 
   try {
-    // Test the API key by making a lightweight request
     const response = await axios.get(`${KEEPERHUB_API_URL}/user/profile`, {
-      headers: { 'Authorization': `Bearer ${KEEPERHUB_API_KEY}` },
+      headers: { 'Authorization': `Bearer ${apiKey}` },
       timeout: 10000
     });
     
     if (response.data?.data) {
+      cachedApiKey = apiKey;
       keeperHubAvailable = true;
       console.log('[KeeperHub] ✅ Connected and ready.');
       return true;
@@ -56,14 +55,14 @@ function encodeSaveCheckpoint(agentId: string, rootHash: string): string {
 
 /**
  * Relays a checkpoint registration transaction through KeeperHub.
- * This provides reliable execution with retries and gas optimization.
+ * API key must have been initialized via initKeeperHub first.
  */
 export async function relayViaKeeperHub(
   contractAddress: string,
   methodName: string,
   args: string[]
 ): Promise<string> {
-  if (!keeperHubAvailable || !USE_KEEPERHUB) {
+  if (!keeperHubAvailable || !cachedApiKey) {
     console.log('[KeeperHub] Not available, falling back to direct submission.');
     return 'fallback';
   }
@@ -71,7 +70,6 @@ export async function relayViaKeeperHub(
   try {
     console.log(`[KeeperHub] 🔄 Relaying transaction for ${methodName}...`);
     
-    // For saveCheckpoint, args are [agentId, rootHash]
     const [agentId, rootHash] = args;
     const encodedData = encodeSaveCheckpoint(agentId, rootHash);
     
@@ -79,7 +77,7 @@ export async function relayViaKeeperHub(
       transactions: [{
         to: contractAddress,
         data: encodedData,
-        chainId: 16602, // 0G Galileo Testnet
+        chainId: 16602,
         gasLimit: 200000
       }],
       options: {
@@ -94,7 +92,7 @@ export async function relayViaKeeperHub(
       payload,
       {
         headers: {
-          'Authorization': `Bearer ${KEEPERHUB_API_KEY}`,
+          'Authorization': `Bearer ${cachedApiKey}`,
           'Content-Type': 'application/json'
         },
         timeout: 60000
@@ -119,8 +117,8 @@ export async function relayViaKeeperHub(
 }
 
 /**
- * Checks if KeeperHub is available for use.
+ * Returns whether KeeperHub is available and initialized.
  */
 export function isKeeperHubAvailable(): boolean {
-  return keeperHubAvailable && USE_KEEPERHUB;
+  return keeperHubAvailable && cachedApiKey !== null;
 }

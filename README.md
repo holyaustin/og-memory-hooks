@@ -649,7 +649,7 @@ openclaw gateway start --verbose
 
 ## 📹 Demo Video
 
-[![Demo Video]](https://youtu.be/your-demo-link)
+[![Demo Video]](https://youtu.be/DypnYNoL1hg)
 
 **3-Minute Demo Covers:**
 
@@ -693,7 +693,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 | **Contract on ChainScan** | https://chainscan-galileo.0g.ai/address/0xFB69D0fb9C892F3565D66bcA92360Ca19B8D9780 |
 | **OpenClaw Docs** | https://docs.openclaw.ai |
 | **0G Documentation** | https://docs.0g.ai |
-| **Demo Video** | (Link to your 3-min demo) |
+| **Demo Video** | (https://youtu.be/DypnYNoL1hg) |
 
 ---
 
