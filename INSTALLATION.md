@@ -35,3 +35,22 @@ text
 ✅ Memory Restored Successfully!
 
 
+curl -X POST https://app.keeperhub.com/api/workflows/3yf8gcnn8t8egt352rf62/webhook \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer kh_T-HZUmYVvFgsMabBi5SP50JMFnedKqKy" \
+  -d '{
+    "agentId": "main",
+    "rootHash": "0x7ea4cc6dbf5efdaca886fd988e2c075037207b7ed0261d8ed8073642a82a388f",
+    "timestamp": 1746234567890
+  }'
+
+
+  curl -X POST https://app.keeperhub.com/api/workflow/3yf8gcnn8t8egt352rf62/execute \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer kh_T-HZUmYVvFgsMabBi5SP50JMFnedKqKy" \
+  -d '{
+    "parameters": {
+      "agentId": "main",
+      "rootHash": "0x7ea4cc6dbf5efdaca886fd988e2c075037207b7ed0261d8ed8073642a82a388f"
+    }
+  }'
