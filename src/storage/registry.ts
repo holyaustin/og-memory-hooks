@@ -41,27 +41,16 @@ export async function registerCheckpoint(agentId: string, rootHash: string): Pro
     let methodUsed: string;
     
     // Try KeeperHub first if available
-    if (isKeeperHubAvailable()) {
-      try {
-        txHash = await relayViaKeeperHub(REGISTRY_ADDRESS, 'saveCheckpoint', [agentId, rootHash]);
-        methodUsed = 'KeeperHub';
-      } catch (keeperError) {
-        console.warn(`⚠️ KeeperHub failed, falling back to direct: ${keeperError.message}`);
-        // Fall back to direct ethers
-        const tx = await contract.saveCheckpoint(agentId, rootHash);
-        const receipt = await tx.wait(1);
-        txHash = tx.hash;
-        methodUsed = 'direct (fallback)';
-      }
-    } else {
-      // Direct ethers transaction
-      const tx = await contract.saveCheckpoint(agentId, rootHash);
-      console.log(`⏳ Transaction submitted: ${tx.hash}`);
-      const receipt = await tx.wait(1);
-      txHash = tx.hash;
-      methodUsed = 'direct';
-      console.log(`✅ Checkpoint registered! Block: ${receipt.blockNumber}`);
-    }
+if (isKeeperHubAvailable()) {
+  try {
+    // Pass all three parameters to KeeperHub
+    const result = await relayViaKeeperHub(REGISTRY_ADDRESS, 'saveCheckpoint', [agentId, rootHash]);
+    methodUsed = 'KeeperHub';
+    return result;
+  } catch (keeperError) {
+    console.warn(`⚠️ KeeperHub failed, falling back to direct: ${keeperError.message}`);
+  }
+}
     
     // Broadcast to AXL peers for P2P sync
     try {
