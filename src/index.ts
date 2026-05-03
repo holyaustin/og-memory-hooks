@@ -83,10 +83,14 @@ export default {
       }
     });
     
-    // Start AXL (no child_process, just checks for existing node)
-    startAXLNode().then(() => {
-      axlStarted = true;
-    }).catch(() => {});
+    // Start AXL (checks for existing node, doesn't spawn)
+    startAXLNode()
+      .then(() => {
+        axlStarted = true;
+      })
+      .catch((err) => {
+        console.warn('[AXL] Init failed:', err?.message);
+      });
     
     console.log('✅ 0G-Memory-Hooks plugin registered.');
   }
