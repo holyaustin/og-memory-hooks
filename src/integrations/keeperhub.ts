@@ -1,124 +1,104 @@
-// src/integrations/keeperhub.ts - Security scanner compliant
-// API key is passed explicitly, not read from env inside network functions
+// src/integrations/keeperhub.ts - Using kh CLI (recommended)
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
-import axios from 'axios';
-import { ethers } from 'ethers';
-
-// Hardcoded API URL
-const KEEPERHUB_API_URL = 'https://app.keeperhub.com/api';
-
-// Registry contract ABI for encoding
-const REGISTRY_ABI = [
-  "function saveCheckpoint(string memory agentId, string memory rootHash) external"
-];
-
-// These will be set by the calling function, not read from env at module level
-let keeperHubAvailable = false;
-let cachedApiKey: string | null = null;
+const execAsync = promisify(exec);
+let cliAvailable = false;
+let khPath = process.env.KEEPERHUB_CLI_PATH || 'kh';
 
 /**
- * Initialize KeeperHub with an API key.
- * Call this during plugin registration with the key from env.
+ * Initialize KeeperHub by checking if CLI is available.
+ * No API key needed for CLI - uses saved auth from `kh auth login`.
  */
-export async function initKeeperHub(apiKey: string): Promise<boolean> {
-  if (!apiKey || !apiKey.startsWith('kh_')) {
-    console.warn('[KeeperHub] Invalid API key format. Integration disabled.');
-    return false;
-  }
-
+export async function initKeeperHub(_apiKey?: string): Promise<boolean> {
   try {
-    const response = await axios.get(`${KEEPERHUB_API_URL}/user/profile`, {
-      headers: { 'Authorization': `Bearer ${apiKey}` },
-      timeout: 10000
-    });
-    
-    if (response.data?.data) {
-      cachedApiKey = apiKey;
-      keeperHubAvailable = true;
-      console.log('[KeeperHub] ✅ Connected and ready.');
+    const { stdout } = await execAsync(`${khPath} --version`, { timeout: 5000 });
+    if (stdout) {
+      cliAvailable = true;
+      console.log('[KeeperHub] ✅ CLI available.');
+      
+      // Check auth status
+      const { stdout: authStatus } = await execAsync(`${khPath} auth status`, { timeout: 5000 });
+      if (authStatus.includes('Logged in')) {
+        console.log('[KeeperHub] ✅ Authenticated.');
+      } else {
+        console.warn('[KeeperHub] ⚠️ Not logged in. Run: kh auth login');
+      }
       return true;
     }
+    return false;
   } catch (error: any) {
-    console.warn('[KeeperHub] ⚠️ Connection failed:', error.response?.data?.error?.message || error.message);
+    console.warn('[KeeperHub] ⚠️ CLI not found. Install from: https://keeperhub.com');
+    console.warn('[KeeperHub] Falling back to direct transaction mode.');
+    return false;
   }
-  
-  return false;
 }
 
 /**
- * Encodes a contract function call using ethers.js.
+ * Call a contract function using KeeperHub CLI.
+ * This is more reliable than the direct-execution API.
  */
-function encodeSaveCheckpoint(agentId: string, rootHash: string): string {
-  const iface = new ethers.Interface(REGISTRY_ABI);
-  return iface.encodeFunctionData('saveCheckpoint', [agentId, rootHash]);
+export async function callContract(
+  contractAddress: string,
+  methodName: string,
+  args: string[]
+): Promise<string | null> {
+  if (!cliAvailable) return null;
+
+  const argsStr = args.map(a => `"${a}"`).join(' ');
+  // Use 0g-testnet as the chain identifier (0G Galileo)
+  const command = `${khPath} contract call ${contractAddress} ${methodName} ${argsStr} --chain 0g-testnet --wait`;
+
+  try {
+    console.log(`[KeeperHub] 🔄 Executing: ${methodName} on ${contractAddress}`);
+    const { stdout, stderr } = await execAsync(command, { timeout: 60000 });
+    
+    if (stderr && !stderr.includes('Warning') && !stderr.includes('Gas')) {
+      console.warn(`[KeeperHub] ⚠️ CLI stderr: ${stderr.substring(0, 200)}`);
+    }
+    
+    // Extract transaction hash from output
+    const txMatch = stdout.match(/0x[a-fA-F0-9]{64}/);
+    const txHash = txMatch ? txMatch[0] : null;
+    
+    if (txHash) {
+      console.log(`[KeeperHub] ✅ Transaction: ${txHash}`);
+      return txHash;
+    }
+    
+    // If no tx hash, check if execution succeeded
+    if (stdout.includes('success') || stdout.includes('executed')) {
+      console.log(`[KeeperHub] ✅ Execution succeeded.`);
+      return 'executed';
+    }
+    
+    console.warn(`[KeeperHub] ⚠️ Unexpected output: ${stdout.substring(0, 200)}`);
+    return null;
+  } catch (error: any) {
+    console.error(`[KeeperHub] ❌ Failed: ${error.message}`);
+    return null;
+  }
 }
 
 /**
- * Relays a checkpoint registration transaction through KeeperHub.
- * API key must have been initialized via initKeeperHub first.
+ * Relay a checkpoint registration via KeeperHub CLI.
+ * Matches the interface expected by registry.ts.
  */
 export async function relayViaKeeperHub(
   contractAddress: string,
   methodName: string,
   args: string[]
 ): Promise<string> {
-  if (!keeperHubAvailable || !cachedApiKey) {
-    console.log('[KeeperHub] Not available, falling back to direct submission.');
-    return 'fallback';
+  const txHash = await callContract(contractAddress, methodName, args);
+  if (txHash) {
+    return txHash;
   }
-
-  try {
-    console.log(`[KeeperHub] 🔄 Relaying transaction for ${methodName}...`);
-    
-    const [agentId, rootHash] = args;
-    const encodedData = encodeSaveCheckpoint(agentId, rootHash);
-    
-    const payload = {
-      transactions: [{
-        to: contractAddress,
-        data: encodedData,
-        chainId: 16602,
-        gasLimit: 200000
-      }],
-      options: {
-        retries: 3,
-        gasPriceStrategy: 'auto',
-        waitForConfirmation: true
-      }
-    };
-
-    const response = await axios.post(
-      `${KEEPERHUB_API_URL}/direct-execution`,
-      payload,
-      {
-        headers: {
-          'Authorization': `Bearer ${cachedApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        timeout: 60000
-      }
-    );
-
-    const executionId = response.data?.data?.executionId;
-    const txHash = response.data?.data?.transactionHash;
-    
-    console.log(`[KeeperHub] ✅ Execution submitted: ${executionId}`);
-    if (txHash) {
-      console.log(`[KeeperHub] 🔗 Transaction: ${txHash}`);
-      return txHash;
-    }
-    
-    return executionId;
-  } catch (error: any) {
-    const errorMsg = error.response?.data?.error?.message || error.message;
-    console.error(`[KeeperHub] ❌ Relay failed: ${errorMsg}`);
-    throw new Error(`KeeperHub relay failed: ${errorMsg}`);
-  }
+  throw new Error('KeeperHub transaction failed');
 }
 
 /**
- * Returns whether KeeperHub is available and initialized.
+ * Returns whether KeeperHub is available.
  */
 export function isKeeperHubAvailable(): boolean {
-  return keeperHubAvailable && cachedApiKey !== null;
+  return cliAvailable;
 }
